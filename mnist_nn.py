@@ -27,7 +27,7 @@ for epoch in range(1):
         y = y_train[bi:end]
 
         logits, pred = neural_net(x)
-        logits.backprop(lr * (y - pred.val))
+        logits.backprop(lr * (y - pred.val)) # total rather than mean loss over batch
 
 _, preds = neural_net(Node(val=x_test))
 accuracy = np.count_nonzero(np.argmax(preds.val, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]

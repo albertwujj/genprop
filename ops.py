@@ -1,5 +1,4 @@
 import numpy as np
-
 from backprop import Node
 
 def dot(a, b):
@@ -20,7 +19,7 @@ def softmax(a):
         return e_x / np.expand_dims(e_x.sum(axis=-1), axis=-1)
     val = _softmax(a.val)
     # grad not included, can just use derivative of loss with respect to logits directly
-    return Node(val, (a,), None)
+    return Node(val, (a, ), None)
 
 def mul(a, b):
     val = a.val * b.val
@@ -29,22 +28,9 @@ def mul(a, b):
 
 def mean(a, axis=None):
     val = a.val.mean(axis=axis)
-    size = a.vak.size if axis is None else a.val.shape[axis]
-    jacob = lambda grad: np.full(a.shape, grad/size)
-    return Node(val, (a,), jacob)
-
-def slice(a, slice):
-    val = a.val[slice]
-    def jacob(grad):
-        a_grad = np.zeros(a.val.shape)
-        a_grad[slice] = grad
-    return Node(val, (a,), jacob)
-
-def concat(inputs, axis=0):
-    val = np.concatenate(inputs, axis=axis)
-    def jacob(grad):
-        return (np.take(grad, i, axis=axis) for i, x in enumerate(inputs))
-    return Node(val, inputs, jacob)
+    size = a.val.size if axis is None else a.val.shape[axis]
+    jacob = lambda grad: (np.full(a.val.shape, grad/size), )
+    return Node(val, (a, ), jacob)
 
 def stop_gradient(a):
-    return Node(a.val, (a,), None)
+    return Node(a.val, (a, ), None)
