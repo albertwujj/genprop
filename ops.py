@@ -9,7 +9,7 @@ def sub(a, b):
 
 def power(a):
     val = a.val**2
-    jacob = lambda dy: (np.abs(dy * 2 * a.val),)
+    jacob = lambda dy: (dy * 2 * a.val,)
     return Node(val, (a,), jacob)
 
 def sigmoid(a):
@@ -19,6 +19,12 @@ def sigmoid(a):
     jacob = lambda dy: (dy * _sigmoid(a.val) * (1-_sigmoid(a.val)),)
     return Node(val, (a,), jacob)
 
+def softmax(a):
+    def _softmax(x):
+        e_x = np.exp(x - np.expand_dims(np.max(x, axis=-1),-1))
+        return e_x / np.expand_dims(e_x.sum(axis=-1),axis=-1)
+    val = _softmax(a.val)
+    return Node(val, (a,), None)
 
 def dot(a, b):
     val = a.val.dot(b.val)
@@ -53,5 +59,3 @@ def mean(a, axis=0):
     size = a.val.shape[axis]
     jacob = lambda dy: (np.repeat(np.expand_dims(dy/size, axis=axis), size, axis=axis),)
     return Node(val, (a,), jacob)
-
-
