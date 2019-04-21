@@ -2,60 +2,49 @@ import numpy as np
 
 from backprop import Node
 
-def sub(a, b):
-    val = a.val - b.val
-    jacob = lambda dy: (np.full(a.val.shape, dy), -np.full(a.val.shape,dy))
+def dot(a, b):
+    val = a.val.dot(b.val)
+    def jacob(grad):
+        a_grad = np.zeros(a.val.shape)
+        b_grad = np.zeros(b.val.shape)
+        for i in range(grad.shape[0]):
+            a_grad[i, :] = np.sum(grad[(i,), :] * b.val, axis=1)
+        for j in range(grad.shape[1]):
+            b_grad[:, j] = np.sum(grad[:, (j,)] * a.val, axis=0)
+        return a_grad, b_grad
     return Node(val, (a, b), jacob)
-
-def power(a):
-    val = a.val**2
-    jacob = lambda dy: (dy * 2 * a.val,)
-    return Node(val, (a,), jacob)
-
-def sigmoid(a):
-    def _sigmoid(x):
-        return 1 / (1 + np.exp(-x))
-    val = _sigmoid(a.val)
-    jacob = lambda dy: (dy * _sigmoid(a.val) * (1-_sigmoid(a.val)),)
-    return Node(val, (a,), jacob)
 
 def softmax(a):
     def _softmax(x):
-        e_x = np.exp(x - np.expand_dims(np.max(x, axis=-1),-1))
-        return e_x / np.expand_dims(e_x.sum(axis=-1),axis=-1)
+        e_x = np.exp(x - np.expand_dims(np.max(x, axis=-1), -1))
+        return e_x / np.expand_dims(e_x.sum(axis=-1), axis=-1)
     val = _softmax(a.val)
+    # grad not included, can just use derivative of loss with respect to logits directly
     return Node(val, (a,), None)
 
-def dot(a, b):
-    val = a.val.dot(b.val)
-    def jacob(dy):
-        a_grad = np.zeros(a.val.shape)
-        b_grad = np.zeros(b.val.shape)
-        for i in range(dy.shape[0]):
-            a_grad[i, :] = np.sum(dy[(i,),:] * b_grad, axis=-1)
-        for j in range(dy.shape[1]):
-            b_grad[:, j] = np.sum(dy[:,(j,)] * a_grad, axis=-2)
-        return a_grad, b_grad
-    return Node(val, (a,b), jacob)
-
-
-def dotND(a, b):
-    val = a.val.dot(b.val)
-    def jacob(dy):
-        a_grad = np.zeros(a.val.shape if len(a.val.shape) > 2 else (1,) + a.val.shape)
-        b_grad = np.zeros(a.val.shape if len(b.val.shape) > 2 else (1,) + b.val.shape)
-        for index in np.ndindex(*(a_grad.shape[:-2] + b_grad.shape[:-2])):
-            for i in range(dy.shape[0]):
-                a_grad[index, i, :] = np.sum(dy[index, (i,),:] * b_grad[index], axis=-1)
-            for j in range(dy.shape[1]):
-                b_grad[index, :, j] =  np.sum(dy[index, :,(j,)] * a_grad[index], axis=-2)
-        return a_grad if len(a.val.shape) > 2 else a_grad.squeeze(0), \
-               b_grad if len(b.val.shape) > 2 else b_grad.squeeze(0)
-
+def mul(a, b):
+    val = a.val * b.val
+    jacob = lambda grad: (grad * b.val, grad * a.val)
     return Node(val, (a, b), jacob)
 
-def mean(a, axis=0):
+def mean(a, axis=None):
     val = a.val.mean(axis=axis)
-    size = a.val.shape[axis]
-    jacob = lambda dy: (np.repeat(np.expand_dims(dy/size, axis=axis), size, axis=axis),)
+    size = a.vak.size if axis is None else a.val.shape[axis]
+    jacob = lambda grad: np.full(a.shape, grad/size)
     return Node(val, (a,), jacob)
+
+def slice(a, slice):
+    val = a.val[slice]
+    def jacob(grad):
+        a_grad = np.zeros(a.val.shape)
+        a_grad[slice] = grad
+    return Node(val, (a,), jacob)
+
+def concat(inputs, axis=0):
+    val = np.concatenate(inputs, axis=axis)
+    def jacob(grad):
+        return (np.take(grad, i, axis=axis) for i, x in enumerate(inputs))
+    return Node(val, inputs, jacob)
+
+def stop_gradient(a):
+    return Node(a.val, (a,), None)

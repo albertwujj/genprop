@@ -1,7 +1,5 @@
-import numpy as np
-
 class Node():
-    def __init__(self, val, inputs=None, jacob = None, changeable=False):
+    def __init__(self, val, inputs=None, jacob=None, changeable=False):
         self.inputs = inputs
         self.jacob = jacob
         self.val = val
@@ -9,9 +7,9 @@ class Node():
 
     def backprop(self, grad):
         if self.jacob:
-            grads = self.jacob(grad)
-            for input, grad_i in zip(self.inputs, grads):
-                input.backprop(grad_i)
+            input_grads = self.jacob(grad)
+            for input, input_grad in zip(self.inputs, input_grads):
+                input.backprop(input_grad)
 
         if self.changeable:
             self.val += grad
