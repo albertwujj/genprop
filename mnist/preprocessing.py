@@ -12,6 +12,8 @@ def download(filename):
         urlretrieve(DATA_URL + filename + '.gz', 'mnist/data/' + filename)
 
 def read_mnist():
+    if not os.path.exists('mnist/data'):
+        os.mkdir('mnist/data')
     def read_idx(filename):
         download(filename)
         with gzip.open('mnist/data/' + filename, 'rb') as f:
