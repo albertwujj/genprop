@@ -10,7 +10,7 @@ def dot(a, b):
             a_grad[i, :] = np.sum(grad[(i,), :] * b.val, axis=1)
         for j in range(grad.shape[1]):
             b_grad[:, j] = np.sum(grad[:, (j,)] * a.val, axis=0)
-        return a_grad, b_grad
+        return (a_grad, b_grad)
     return Node(val, (a, b), jacob)
 
 def softmax(a):
